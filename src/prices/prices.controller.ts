@@ -1,34 +1,32 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
 import { PricesService } from './prices.service';
-import { CreatePriceDto } from './dto/create-price.dto';
-import { UpdatePriceDto } from './dto/update-price.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
-@Controller('prices')
+@Controller('price')
 export class PricesController {
-  constructor(private readonly pricesService: PricesService) {}
-
-  @Post()
-  create(@Body() createPriceDto: CreatePriceDto) {
-    return this.pricesService.create(createPriceDto);
+  constructor(
+    private readonly pricesService: PricesService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {
+    this.pricesService = pricesService;
   }
-
   @Get()
-  findAll() {
+  async findAll() {
+    const cachedData = await this.cacheManager.get(
+      'bitcoin-ethereum-dogecoin-prices',
+    );
+    if (cachedData) return cachedData;
     return this.pricesService.findAll();
   }
 
+  @Get('ping')
+  ping() {
+    return this.pricesService.ping();
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.pricesService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePriceDto: UpdatePriceDto) {
-    return this.pricesService.update(+id, updatePriceDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.pricesService.remove(+id);
+  findOne(@Param('id') id: string, @Query('minutes') minutes = 60) {
+    return this.pricesService.findOne(id, minutes);
   }
 }
