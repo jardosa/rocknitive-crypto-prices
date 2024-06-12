@@ -13,10 +13,6 @@ export class PricesController {
   }
   @Get()
   async findAll() {
-    const cachedData = await this.cacheManager.get(
-      'bitcoin-ethereum-dogecoin-prices',
-    );
-    if (cachedData) return cachedData;
     return this.pricesService.findAll();
   }
 

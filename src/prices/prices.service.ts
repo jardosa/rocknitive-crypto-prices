@@ -26,8 +26,9 @@ export class PricesService {
 
   @Cron('*/1 * * * *')
   async refreshPrices() {
-    const { data } = await firstValueFrom(
-      this.httpService.get('http://localhost:3000/price').pipe(
+    await this.cacheManager.del('/price/');
+    await firstValueFrom(
+      this.httpService.get('http://localhost:3000/price/').pipe(
         catchError((error: AxiosError) => {
           this.logger.error(error.response.data);
           throw 'An error happened!';
@@ -35,13 +36,7 @@ export class PricesService {
       ),
     );
 
-    await this.cacheManager.set(
-      'bitcoin-ethereum-dogecoin-prices',
-      data,
-      55000,
-    );
-
-    this.logger.log('refreshed prices cache');
+    this.logger.log('Refreshed Prices cache');
   }
 
   async ping(): Promise<Record<string, string>> {
@@ -60,10 +55,10 @@ export class PricesService {
   async findAll() {
     const response = await firstValueFrom(
       this.httpService
-        .get('simple/price', {
+        .get('coins/markets', {
           params: {
             ids: 'bitcoin,ethereum,dogecoin',
-            vs_currencies: 'usd',
+            vs_currency: 'usd',
           },
         })
         .pipe(
